@@ -9,16 +9,16 @@ from tagging_db.config import ConfigManager
 from tagging_db.engine import TagEngine
 
 console = Console()
-config = ConfigManager()
-engine = TagEngine(config)
+app_config = ConfigManager()
+engine = TagEngine(app_config)
 
 @click.group()
 @click.option('--config', default='.tagconfig', help='Path to config file')
-def cli(config_path):
+def cli(config):
     """Tagging system for files"""
-    global config, engine
-    config.load(config_path)
-    engine = TagEngine(config)
+    global app_config, engine
+    app_config.load(config)
+    engine = TagEngine(app_config)
 
 @cli.command()
 @click.argument('file_path')
@@ -35,9 +35,9 @@ def add(file_path, tags):
 @cli.command()
 @click.argument('query')
 @click.option('--type', help='Filter by file type')
-def find(query, type_filter):
+def find(query, type):
     """Search files by tags"""
-    results = engine.search(query, type_filter)
+    results = engine.search(query, type)
     for path, tags in results.items():
         console.print(f"{path}: {tags}")
 
@@ -45,10 +45,10 @@ def find(query, type_filter):
 @click.argument('folder_path')
 @click.argument('tag')
 @click.option('--type', help='File type to apply to')
-def apply(folder_path, tag, type_filter):
+def apply(folder_path, tag, type):
     """Batch apply tag to folder"""
     parsed_tag = tag.split(':', 1) if ':' in tag else (tag, '')
-    count = engine.batch_apply(folder_path, parsed_tag, type_filter)
+    count = engine.batch_apply(folder_path, parsed_tag, type)
     console.print(f"[green]Applied to {count} files[/green]")
 
 if __name__ == '__main__':
