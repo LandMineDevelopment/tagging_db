@@ -3,7 +3,6 @@ from click.testing import CliRunner
 from tag import cli
 
 class TestCLI:
-class TestCLI:
     @pytest.fixture
     def runner(self):
         return CliRunner()
