@@ -51,5 +51,14 @@ def apply(folder_path, tag, type):
     count = engine.batch_apply(folder_path, parsed_tag, type)
     console.print(f"[green]Applied to {count} files[/green]")
 
+@cli.command()
+@click.option('--to', required=True, type=click.Choice(['md', 'db']))
+def switch(to):
+    """Switch storage backend"""
+    global engine
+    app_config.data['storage'] = to
+    engine = TagEngine(app_config)
+    console.print(f"[green]Switched to {to} storage[/green]")
+
 if __name__ == '__main__':
     cli()

@@ -1,6 +1,7 @@
 storage: md
 separator: /
 index_memory_mb: 50
+db_path: tags.db
 colors:
   tag: green
   error: red

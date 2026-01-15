@@ -10,12 +10,16 @@ def config():
     return ConfigManager()
 
 @pytest.fixture
-def storage(config):
-    import tempfile
-    temp_file = tempfile.NamedTemporaryFile(mode='w+', suffix='.md', delete=False)
-    temp_file.close()
-    config.data['tags_file'] = temp_file.name
+def storage(config, tmp_path):
+    config.data['tags_file'] = str(tmp_path / 'tags.md')
     return MarkdownStorage(config)
+
+@pytest.fixture
+def db_storage(config, tmp_path):
+    config.data['storage'] = 'db'
+    config.data['db_path'] = str(tmp_path / 'test.db')
+    from tagging_db.storage.database import DatabaseStorage
+    return DatabaseStorage(config)
 
 class TestMarkdownStorage:
     def test_add_tags_new_file(self, storage):
@@ -48,6 +52,56 @@ class TestMarkdownStorage:
         results = storage.search('work', 'txt')
         assert 'test.txt' in results
         assert 'other.md' not in results
+    
+    def test_search_with_wildcard(self, storage):
+        storage.add_tags('test.txt', [('work', 'project')])
+        storage.add_tags('other.md', [('personal', '')])
+        results = storage.search('work*')
+        assert 'test.txt' in results
+        assert 'other.md' not in results
+        results_star = storage.search('*work')
+        assert 'test.txt' in results_star  # 'work/project' contains 'work'
+
+class TestDatabaseStorage:
+    def test_add_tags_new_file(self, db_storage):
+        db_storage.add_tags('test.txt', [('work', 'project')])
+        tags = db_storage.get_tags('test.txt')
+        assert 'work/project' in tags
+        assert len(tags) == 1
+    
+    def test_add_tags_existing_file(self, db_storage):
+        db_storage.add_tags('test.txt', [('work', 'project')])
+        db_storage.add_tags('test.txt', [('personal', '')])
+        tags = db_storage.get_tags('test.txt')
+        assert 'work/project' in tags
+        assert 'personal' in tags
+    
+    def test_get_tags_nonexistent(self, db_storage):
+        tags = db_storage.get_tags('nonexistent.txt')
+        assert tags == []
+    
+    def test_search(self, db_storage):
+        db_storage.add_tags('test.txt', [('work', 'project')])
+        db_storage.add_tags('other.md', [('personal', '')])
+        results = db_storage.search('work')
+        assert 'test.txt' in results
+        assert results['test.txt'] == ['work/project']
+    
+    def test_search_with_type_filter(self, db_storage):
+        db_storage.add_tags('test.txt', [('work', 'project')])
+        db_storage.add_tags('other.md', [('work', 'project')])
+        results = db_storage.search('work', 'txt')
+        assert 'test.txt' in results
+        assert 'other.md' not in results
+    
+    def test_search_with_wildcard(self, db_storage):
+        db_storage.add_tags('test.txt', [('work', 'project')])
+        db_storage.add_tags('other.md', [('personal', '')])
+        results = db_storage.search('work*')
+        assert 'test.txt' in results
+        assert 'other.md' not in results
+        results_star = db_storage.search('*work')
+        assert 'test.txt' in results_star  # 'work/project' contains 'work'
     
     def test_batch_apply(self, storage, tmp_path):
         # Create test files

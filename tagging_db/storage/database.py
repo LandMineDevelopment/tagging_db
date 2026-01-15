@@ -1,18 +1,123 @@
-# Placeholder for DB storage implementation
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Table
+from sqlalchemy.orm import sessionmaker, declarative_base, relationship
+from sqlalchemy import or_, and_
+import os
+from pathlib import Path
+from tagging_db.storage.interfaces import StorageInterface
+import re
 
-class DatabaseStorage:
+Base = declarative_base()
+
+# Association table for many-to-many
+file_tags = Table('file_tags', Base.metadata,
+    Column('file_id', Integer, ForeignKey('files.id'), primary_key=True),
+    Column('tag_id', Integer, ForeignKey('tags.id'), primary_key=True),
+    Column('added_at', DateTime, default=None)
+)
+
+class File(Base):
+    __tablename__ = 'files'
+    id = Column(Integer, primary_key=True)
+    path = Column(String, unique=True, nullable=False)
+    type = Column(String, nullable=False)
+    tags = relationship('Tag', secondary=file_tags, back_populates='files')
+
+class Tag(Base):
+    __tablename__ = 'tags'
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True, nullable=False)
+    files = relationship('File', secondary=file_tags, back_populates='tags')
+
+class Exclusion(Base):
+    __tablename__ = 'exclusions'
+    id = Column(Integer, primary_key=True)
+    tag1_id = Column(Integer, ForeignKey('tags.id'), nullable=False)
+    tag2_id = Column(Integer, ForeignKey('tags.id'), nullable=False)
+
+class DatabaseStorage(StorageInterface):
     def __init__(self, config):
         self.config = config
-        # TODO: SQLAlchemy setup
+        db_path = config.get('db_path', 'tags.db')
+        self.engine = create_engine(f'sqlite:///{db_path}')
+        Base.metadata.create_all(self.engine)
+        self.Session = sessionmaker(bind=self.engine)
+    
+    def _extract_type(self, file_path):
+        return Path(file_path).suffix.lstrip('.').lower() or 'unknown'
     
     def add_tags(self, file_path, tags):
-        pass
+        session = self.Session()
+        try:
+            # Get or create file
+            file_obj = session.query(File).filter_by(path=file_path).first()
+            if not file_obj:
+                file_type = self._extract_type(file_path)
+                file_obj = File(path=file_path, type=file_type)
+                session.add(file_obj)
+                session.flush()  # Get ID
+            
+            for tag_key, tag_value in tags:
+                full_tag = f"{tag_key}{self.config.get('separator', '/')}{tag_value}" if tag_value else tag_key
+                tag_obj = session.query(Tag).filter_by(name=full_tag).first()
+                if not tag_obj:
+                    tag_obj = Tag(name=full_tag)
+                    session.add(tag_obj)
+                    session.flush()
+                
+                # Check if association exists
+                if tag_obj not in file_obj.tags:
+                    file_obj.tags.append(tag_obj)
+            
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
     
     def get_tags(self, file_path):
-        return []
+        session = self.Session()
+        try:
+            file_obj = session.query(File).filter_by(path=file_path).first()
+            if file_obj:
+                return [tag.name for tag in file_obj.tags]
+            return []
+        finally:
+            session.close()
     
     def search(self, query, type_filter=None):
-        return {}
+        session = self.Session()
+        try:
+            # Convert * to .* for regex
+            query = query.replace('*', '.*')
+            
+            query_obj = session.query(File)
+            if type_filter:
+                query_obj = query_obj.filter(File.type == type_filter)
+            
+            results = {}
+            for file_obj in query_obj:
+                matching_tags = []
+                for tag in file_obj.tags:
+                    try:
+                        if re.search(query, tag.name):
+                            matching_tags.append(tag.name)
+                    except re.error:
+                        pass
+                if matching_tags:
+                    results[file_obj.path] = matching_tags
+            return results
+        finally:
+            session.close()
     
     def batch_apply(self, folder_path, tag, type_filter=None):
-        return 0
+        import os
+        count = 0
+        for root, _, filenames in os.walk(folder_path):
+            for filename in filenames:
+                file_path = os.path.join(root, filename)
+                file_type = self._extract_type(file_path)
+                if not type_filter or file_type == type_filter:
+                    self.add_tags(file_path, [tag])
+                    count += 1
+        return count

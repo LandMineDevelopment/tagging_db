@@ -79,11 +79,18 @@ class MarkdownStorage:
         files, _, _ = self._load_data()
         results = {}
         
+        # Convert * wildcards to .* for regex
+        query = query.replace('*', '.*')
+        
         for file_path, data in files.items():
             if type_filter and data['type'] != type_filter:
                 continue
-            if any(re.search(query, tag) for tag in data['tags']):
-                results[file_path] = data['tags']
+            try:
+                if any(re.search(query, tag) for tag in data['tags']):
+                    results[file_path] = data['tags']
+            except re.error:
+                # If invalid regex, skip
+                pass
         
         return results
     
