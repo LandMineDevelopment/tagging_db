@@ -1,0 +1,7 @@
+Click==8.1.7
+SQLAlchemy==2.0.23
+fuzzywuzzy==0.18.0
+python-Levenshtein==0.21.1
+PyYAML==6.0.1
+rich==13.7.0
+tqdm==4.66.1

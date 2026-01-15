@@ -1,0 +1,6 @@
+storage: md
+separator: /
+index_memory_mb: 50
+colors:
+  tag: green
+  error: red
