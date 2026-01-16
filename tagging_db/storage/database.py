@@ -1,10 +1,14 @@
+"""
+Database storage backend using SQLite.
+Provides fast queries for large datasets.
+"""
+import os
+import re
+from pathlib import Path
+from typing import List, Tuple, Dict
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Table
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
-from sqlalchemy import or_, and_
-import os
-from pathlib import Path
 from tagging_db.storage.interfaces import StorageInterface
-import re
 
 Base = declarative_base()
 
@@ -35,6 +39,8 @@ class Exclusion(Base):
     tag2_id = Column(Integer, ForeignKey('tags.id'), nullable=False)
 
 class DatabaseStorage(StorageInterface):
+    """Storage implementation using SQLite database."""
+    
     def __init__(self, config):
         self.config = config
         db_path = config.get('db_path', 'tags.db')
@@ -85,12 +91,10 @@ class DatabaseStorage(StorageInterface):
         finally:
             session.close()
     
-    def search(self, query, type_filter=None):
+    def search(self, query, type_filter=None, fuzzy=False):
         session = self.Session()
         try:
-            # Convert * to .* for regex
-            query = query.replace('*', '.*')
-            
+            from fuzzywuzzy import fuzz
             query_obj = session.query(File)
             if type_filter:
                 query_obj = query_obj.filter(File.type == type_filter)
@@ -99,14 +103,37 @@ class DatabaseStorage(StorageInterface):
             for file_obj in query_obj:
                 matching_tags = []
                 for tag in file_obj.tags:
-                    try:
-                        if re.search(query, tag.name):
+                    if fuzzy:
+                        if any(fuzz.partial_ratio(query, part) >= 70 for part in tag.name.split('/')):
                             matching_tags.append(tag.name)
-                    except re.error:
-                        pass
+                    else:
+                        # Regex search with wildcards
+                        query_regex = query.replace('*', '.*')
+                        try:
+                            if re.search(query_regex, tag.name):
+                                matching_tags.append(tag.name)
+                        except re.error:
+                            pass
                 if matching_tags:
                     results[file_obj.path] = matching_tags
             return results
+        finally:
+            session.close()
+    
+    def remove_tags(self, file_path, tags):
+        session = self.Session()
+        try:
+            file_obj = session.query(File).filter_by(path=file_path).first()
+            if file_obj:
+                for tag_key, tag_value in tags:
+                    full_tag = f"{tag_key}{self.config.get('separator', '/')}{tag_value}" if tag_value else tag_key
+                    tag_obj = session.query(Tag).filter_by(name=full_tag).first()
+                    if tag_obj and tag_obj in file_obj.tags:
+                        file_obj.tags.remove(tag_obj)
+                session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
         finally:
             session.close()
     
@@ -121,3 +148,34 @@ class DatabaseStorage(StorageInterface):
                     self.add_tags(file_path, [tag])
                     count += 1
         return count
+    
+    def rename_tag(self, old_tag, new_tag):
+        session = self.Session()
+        try:
+            tag_obj = session.query(Tag).filter_by(name=old_tag).first()
+            if tag_obj:
+                tag_obj.name = new_tag
+                session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+    
+    def get_all_tags(self):
+        session = self.Session()
+        try:
+            tags = session.query(Tag.name).all()
+            return [tag[0] for tag in tags]
+        finally:
+            session.close()
+    
+    def get_all_data(self):
+        session = self.Session()
+        try:
+            data = {}
+            for file_obj in session.query(File).all():
+                data[file_obj.path] = [tag.name for tag in file_obj.tags]
+            return data
+        finally:
+            session.close()

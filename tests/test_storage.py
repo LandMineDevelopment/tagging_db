@@ -61,6 +61,37 @@ class TestMarkdownStorage:
         assert 'other.md' not in results
         results_star = storage.search('*work')
         assert 'test.txt' in results_star  # 'work/project' contains 'work'
+    
+    def test_search_invalid_regex(self, storage):
+        storage.add_tags('test.txt', [('work', '')])
+        # Invalid regex should not crash
+        results = storage.search('[invalid')
+        assert isinstance(results, dict)  # Should return empty or valid
+    
+    def test_search_fuzzy(self, storage):
+        storage.add_tags('test.txt', [('work', 'project')])
+        results = storage.search('work', fuzzy=True)  # Exact match
+        assert 'test.txt' in results
+
+    def test_remove_tags(self, storage):
+        storage.add_tags('test.txt', [('work', 'project')])
+        storage.remove_tags('test.txt', [('work', '')])
+        tags = storage.get_tags('test.txt')
+        assert 'work' not in tags
+    
+    def test_rename_tag(self, storage):
+        storage.add_tags('test.txt', [('old', '')])
+        storage.rename_tag('old', 'new')
+        tags = storage.get_tags('test.txt')
+        assert 'new' in tags
+        assert 'old' not in tags
+    
+    def test_get_all_tags(self, storage):
+        storage.add_tags('test.txt', [('work', 'project')])
+        storage.add_tags('other.md', [('personal', '')])
+        all_tags = storage.get_all_tags()
+        assert 'work/project' in all_tags
+        assert 'personal' in all_tags
 
 class TestDatabaseStorage:
     def test_add_tags_new_file(self, db_storage):
@@ -102,6 +133,17 @@ class TestDatabaseStorage:
         assert 'other.md' not in results
         results_star = db_storage.search('*work')
         assert 'test.txt' in results_star  # 'work/project' contains 'work'
+    
+    def test_search_invalid_regex(self, db_storage):
+        db_storage.add_tags('test.txt', [('work', '')])
+        # Invalid regex should not crash
+        results = db_storage.search('[invalid')
+        assert isinstance(results, dict)  # Should return empty or valid
+    
+    def test_search_fuzzy(self, db_storage):
+        db_storage.add_tags('test.txt', [('work', 'project')])
+        results = db_storage.search('work', fuzzy=True)  # Exact match
+        assert 'test.txt' in results
     
     def test_batch_apply(self, storage, tmp_path):
         # Create test files

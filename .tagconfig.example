@@ -1,0 +1,9 @@
+storage: md
+separator: /
+index_memory_mb: 50
+db_path: tags.db
+history_file: tag_history.json
+colors:
+  tag: green
+  error: red
+exclusions: []
