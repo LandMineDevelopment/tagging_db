@@ -5,26 +5,26 @@ A powerful CLI tool for tagging files with metadata, enabling efficient organiza
 ## Features
 
 ### Core Tagging
-- **Add Tags**: `tag add <file> <tag1> <tag2>` – Assign multiple tags to files.
-- **Remove Tags**: `tag remove <file> <tag>` – Remove specific tags.
-- **List Tags**: `tag list <file>` or `tag list --all` – View tags on a file or all tags.
-- **Rename Tags**: `tag rename <old> <new>` – Rename tags across all files.
+- **Add Tags**: `tagging-db add <file> <tag1> <tag2>` – Assign multiple tags to files.
+- **Remove Tags**: `tagging-db remove <file> <tag>` – Remove specific tags.
+- **List Tags**: `tagging-db list <file>` or `tagging-db list --all` – View tags on a file or all tags.
+- **Rename Tags**: `tagging-db rename <old> <new>` – Rename tags across all files.
 
 ### Search & Discovery
-- **Find Files**: `tag find <query>` – Search by tags with regex/wildcard support.
-- **Fuzzy Search**: `tag find <query> --fuzzy` – Typo-tolerant search using fuzzy matching.
+- **Find Files**: `tagging-db find <query>` – Search by tags with regex/wildcard support.
+- **Fuzzy Search**: `tagging-db find <query> --fuzzy` – Typo-tolerant search using fuzzy matching.
 - **Type Filtering**: Add `--type <ext>` to searches for file type-specific queries.
 
 ### Batch Operations
-- **Apply Tags**: `tag apply <folder> <tag>` – Tag all files in a folder.
+- **Apply Tags**: `tagging-db apply <folder> <tag>` – Tag all files in a folder.
 - **Type Filters**: Combine with `--type <ext>` for selective batch tagging.
 
 ### Advanced Features
-- **Exclusions**: `tag exclude <tag1> <tag2>` – Prevent conflicting tags.
-- **Undo**: `tag undo` – Revert the last operation.
-- **Stats**: `tag stats` – View tag usage analytics.
-- **Backend Switching**: `tag switch --to md/db` – Change storage backend.
-- **Migration**: `tag switch --to md/db --migrate` – Transfer data between backends.
+- **Exclusions**: `tagging-db exclude <tag1> <tag2>` – Prevent conflicting tags.
+- **Undo**: `tagging-db undo` – Revert the last operation.
+- **Stats**: `tagging-db stats` – View tag usage analytics.
+- **Backend Switching**: `tagging-db switch --to md/db` – Change storage backend.
+- **Migration**: `tagging-db switch --to md/db --migrate` – Transfer data between backends.
 
 ### Storage & Performance
 - **Hybrid Storage**: Markdown (human-readable, portable) or SQLite DB (fast for large datasets).
@@ -37,18 +37,36 @@ A powerful CLI tool for tagging files with metadata, enabling efficient organiza
 - Dependencies: Click, SQLAlchemy, fuzzywuzzy, PyYAML, rich, tqdm, argcomplete
 
 ## Installation
-1. Clone or download the repository.
+
+### From PyPI (Recommended)
+```bash
+pip install tagging-db
+```
+This installs the `tagging-db` command globally.
+
+### From Source
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/tagging-db.git
+   cd tagging-db
+   ```
 2. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-3. Copy config example:
+3. (Optional) For development:
+   ```bash
+   pip install -e .[dev]
+   ```
+
+4. Copy config example:
    ```bash
    cp .tagconfig.example .tagconfig
    ```
-4. (Optional) Enable tab completion:
+
+5. (Optional) Enable tab completion:
    ```bash
-   eval "$(register-python-argcomplete main.py)"
+   eval "$(register-python-argcomplete tagging-db)"
    ```
 
 ## Usage Examples
@@ -56,52 +74,52 @@ A powerful CLI tool for tagging files with metadata, enabling efficient organiza
 ### Basic Tagging
 ```bash
 # Add tags to a file
-python main.py add report.txt work project urgent
+tagging-db add report.txt work project urgent
 
 # Remove a tag
-python main.py remove report.txt urgent
+tagging-db remove report.txt urgent
 
 # List tags on a file
-python main.py list report.txt
+tagging-db list report.txt
 
 # List all tags
-python main.py list --all
+tagging-db list --all
 ```
 
 ### Searching
 ```bash
 # Find files with regex
-python main.py find work/*
+tagging-db find work/*
 
 # Fuzzy search for typos
-python main.py find wrk --fuzzy
+tagging-db find wrk --fuzzy
 
 # Filter by file type
-python main.py find project --type txt
+tagging-db find project --type txt
 ```
 
 ### Batch Operations
 ```bash
 # Tag all PNG files in a folder
-python main.py apply /photos image --type png
+tagging-db apply /photos image --type png
 
 # Tag all files in a folder
-python main.py apply /docs archive
+tagging-db apply /docs archive
 ```
 
 ### Advanced
 ```bash
 # Set exclusions
-python main.py exclude public confidential
+tagging-db exclude public confidential
 
 # Undo last action
-python main.py undo
+tagging-db undo
 
 # View stats
-python main.py stats
+tagging-db stats
 
 # Switch to DB for performance
-python main.py switch --to db --migrate
+tagging-db switch --to db --migrate
 ```
 
 ## Configuration
