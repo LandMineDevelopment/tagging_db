@@ -20,18 +20,18 @@ classifiers = [
     "Topic :: Utilities",
 ]
 dependencies = [
-    "Click==8.1.7",
-    "SQLAlchemy==2.0.23",
-    "fuzzywuzzy==0.18.0",
-    "PyYAML==6.0.1",
-    "rich==13.7.0",
-    "tqdm==4.66.1",
-    "argcomplete==3.1.4",
+    "Click>=8.3.1,<9",
+    "SQLAlchemy>=2.0.45,<3",
+    "fuzzywuzzy>=0.18.0,<0.19",
+    "PyYAML>=6.0.3,<7",
+    "rich>=14.2.0,<15",
+    "tqdm>=4.67.1,<5",
+    "argcomplete>=3.6.3,<4",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest==7.4.3",
+    "pytest>=9.0.2,<10",
 ]
 
 [project.scripts]

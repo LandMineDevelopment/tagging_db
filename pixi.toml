@@ -1,0 +1,23 @@
+[workspace]
+authors = ["User <user@example.com>"]
+channels = ["conda-forge"]
+name = "tagging_db"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+tag = "python run.py"
+
+[dependencies]
+python = ">=3.14.2,<3.15"
+click = ">=8.3.1,<9"
+sqlalchemy = ">=2.0.45,<3"
+fuzzywuzzy = ">=0.18.0,<0.19"
+pyyaml = ">=6.0.3,<7"
+rich = ">=14.2.0,<15"
+tqdm = ">=4.67.1,<5"
+pytest = ">=9.0.2,<10"
+argcomplete = ">=3.6.3,<4"
+
+[pypi-dependencies]
+build = ">=1.4.0, <2"

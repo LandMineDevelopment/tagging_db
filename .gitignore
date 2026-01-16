@@ -134,4 +134,6 @@ tags.md
 tags.db
 .tagconfig
 *.db
-*.md
+*.md# pixi environments
+.pixi/*
+!.pixi/config.toml

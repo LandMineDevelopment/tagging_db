@@ -1,0 +1,16 @@
+[
+  {
+    "type": "add_tags",
+    "file_path": "test.txt",
+    "tags": [
+      [
+        "work",
+        ""
+      ],
+      [
+        "project",
+        ""
+      ]
+    ]
+  }
+]
