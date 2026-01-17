@@ -5,7 +5,7 @@ Provides fast queries for large datasets.
 import os
 import re
 from pathlib import Path
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Table
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 from .interfaces import StorageInterface
@@ -43,7 +43,9 @@ class DatabaseStorage(StorageInterface):
     
     def __init__(self, config):
         self.config = config
-        db_path = config.get('db_path', 'tags.db')
+        storage_path = Path(config.get_storage_path())
+        db_path = storage_path / "tags.db"
+        db_path.parent.mkdir(parents=True, exist_ok=True)
         self.engine = create_engine(f'sqlite:///{db_path}')
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
@@ -52,6 +54,7 @@ class DatabaseStorage(StorageInterface):
         return Path(file_path).suffix.lstrip('.').lower() or 'unknown'
     
     def add_tags(self, file_path, tags):
+        file_path = str(Path(file_path).resolve())
         session = self.Session()
         try:
             # Get or create file
@@ -82,6 +85,7 @@ class DatabaseStorage(StorageInterface):
             session.close()
     
     def get_tags(self, file_path):
+        file_path = str(Path(file_path).resolve())
         session = self.Session()
         try:
             file_obj = session.query(File).filter_by(path=file_path).first()
@@ -91,7 +95,7 @@ class DatabaseStorage(StorageInterface):
         finally:
             session.close()
     
-    def search(self, query, type_filter=None, fuzzy=False):
+    def search(self, query, type_filter: Optional[str] = None, fuzzy: bool = False):
         session = self.Session()
         try:
             from fuzzywuzzy import fuzz
@@ -121,6 +125,7 @@ class DatabaseStorage(StorageInterface):
             session.close()
     
     def remove_tags(self, file_path, tags):
+        file_path = str(Path(file_path).resolve())
         session = self.Session()
         try:
             file_obj = session.query(File).filter_by(path=file_path).first()
@@ -137,7 +142,7 @@ class DatabaseStorage(StorageInterface):
         finally:
             session.close()
     
-    def batch_apply(self, folder_path, tag, type_filter=None):
+    def batch_apply(self, folder_path, tag, type_filter: Optional[str] = None):
         import os
         count = 0
         for root, _, filenames in os.walk(folder_path):

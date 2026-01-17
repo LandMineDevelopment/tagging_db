@@ -1,0 +1,8 @@
+colors:
+  error: red
+  tag: green
+exclusions: []
+index_memory_mb: 50
+separator: /
+storage: md
+storage_path: /tmp/new_storage

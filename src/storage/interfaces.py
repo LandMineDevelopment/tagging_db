@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 class StorageInterface(ABC):
     @abstractmethod
@@ -15,11 +15,11 @@ class StorageInterface(ABC):
         pass
     
     @abstractmethod
-    def search(self, query, type_filter=None, fuzzy=False):
+    def search(self, query, type_filter: Optional[str] = None, fuzzy: bool = False):
         pass
     
     @abstractmethod
-    def batch_apply(self, folder_path, tag, type_filter=None):
+    def batch_apply(self, folder_path, tag, type_filter: Optional[str] = None):
         pass
     
     @abstractmethod

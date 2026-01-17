@@ -13,7 +13,7 @@ import argcomplete
 console = Console()
 app_config = ConfigManager()
 config_path = '.tagconfig'
-engine = TagEngine(app_config)
+engine = None
 
 @click.group()
 @click.option('--config', default='.tagconfig', help='Path to config file')
@@ -22,7 +22,11 @@ def cli(config):
     global app_config, config_path, engine
     config_path = config
     app_config.load(config)
-    engine = TagEngine(app_config)
+    if engine is None:
+        try:
+            engine = TagEngine(app_config)
+        except ValueError:
+            engine = None
 
 @cli.command()
 @click.argument('file_path')
@@ -134,8 +138,7 @@ def switch(to, migrate):
     if migrate and current != to:
         # Perform migration
         if to == 'db':
-            from .storage.database import DatabaseStorage
-            new_storage = DatabaseStorage(app_config)
+            raise ValueError("Database storage not available")
         else:
             from .storage.markdown import MarkdownStorage
             new_storage = MarkdownStorage(app_config)
@@ -152,6 +155,47 @@ def switch(to, migrate):
     app_config.save(config_path)
     engine = TagEngine(app_config)
     console.print(f"[green]Switched to {to} storage[/green]")
+
+@cli.command()
+@click.argument('path')
+def set_storage(path):
+    """Set the storage location for tags"""
+    global engine
+    from pathlib import Path
+
+    path_obj = Path(path)
+    if not path_obj.is_absolute():
+        console.print("[red]Storage path must be absolute[/red]")
+        return
+
+    try:
+        # Check if storage path is already set
+        current_path = app_config.get_storage_path()
+        if current_path == str(path_obj):
+            console.print(f"[yellow]Storage path is already set to {path}[/yellow]")
+            return
+    except ValueError:
+        # Not set yet, that's fine
+        current_path = None
+
+    # Create the directory
+    path_obj.mkdir(parents=True, exist_ok=True)
+
+    if current_path:
+        # Relocate existing files
+        try:
+            engine.relocate_storage(str(path_obj))
+            console.print(f"[green]Relocated existing storage files to {path}[/green]")
+        except Exception as e:
+            console.print(f"[red]Error relocating files: {e}[/red]")
+            return
+
+    # Save to config
+    app_config.set_storage_path(str(path_obj))
+    console.print(f"[green]Storage location set to {path}[/green]")
+
+    # Recreate engine with new path
+    engine = TagEngine(app_config)
 
 if __name__ == '__main__':
     argcomplete.autocomplete(cli)

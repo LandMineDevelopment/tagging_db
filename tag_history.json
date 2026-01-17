@@ -12,5 +12,39 @@
         ""
       ]
     ]
+  },
+  {
+    "type": "add_tags",
+    "file_path": "test.txt",
+    "tags": [
+      [
+        "important",
+        ""
+      ],
+      [
+        "project",
+        "alpha"
+      ]
+    ]
+  },
+  {
+    "type": "add_tags",
+    "file_path": "test.txt",
+    "tags": [
+      [
+        "urgent",
+        ""
+      ]
+    ]
+  },
+  {
+    "type": "add_tags",
+    "file_path": "test.txt",
+    "tags": [
+      [
+        "newtag",
+        ""
+      ]
+    ]
   }
 ]

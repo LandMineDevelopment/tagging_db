@@ -5,7 +5,7 @@ Stores data in a human-readable MD file.
 import os
 import re
 from pathlib import Path
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Optional
 from .interfaces import StorageInterface
 
 class MarkdownStorage(StorageInterface):
@@ -13,7 +13,9 @@ class MarkdownStorage(StorageInterface):
     
     def __init__(self, config):
         self.config = config
-        self.tags_file = Path(config.get('tags_file', 'tags.md'))
+        storage_path = Path(config.get_storage_path())
+        self.tags_file = storage_path / "tags.md"
+        self.tags_file.parent.mkdir(parents=True, exist_ok=True)
         if not self.tags_file.exists():
             self._init_file()
     
@@ -63,6 +65,7 @@ class MarkdownStorage(StorageInterface):
     
     def add_tags(self, file_path: str, tags: List[Tuple[str, str]]) -> None:
         """Add tags to a file."""
+        file_path = str(Path(file_path).resolve())
         files, exclusions, metadata = self._load_data()
         file_type = self._extract_type(file_path)
         
@@ -87,10 +90,11 @@ class MarkdownStorage(StorageInterface):
     
     def get_tags(self, file_path: str) -> List[str]:
         """Get tags for a file."""
+        file_path = str(Path(file_path).resolve())
         files, _, _ = self._load_data()
         return files.get(file_path, {}).get('tags', [])
     
-    def search(self, query: str, type_filter: str = None, fuzzy: bool = False) -> Dict[str, List[str]]:
+    def search(self, query: str, type_filter: Optional[str] = None, fuzzy: bool = False) -> Dict[str, List[str]]:
         """Search files by tags."""
         files, _, _ = self._load_data()
         results = {}
@@ -119,6 +123,7 @@ class MarkdownStorage(StorageInterface):
     
     def remove_tags(self, file_path: str, tags: List[Tuple[str, str]]) -> None:
         """Remove tags from a file."""
+        file_path = str(Path(file_path).resolve())
         files, exclusions, metadata = self._load_data()
         if file_path in files:
             separator = self.config.get('separator', '/')
@@ -155,7 +160,7 @@ class MarkdownStorage(StorageInterface):
         files, _, _ = self._load_data()
         return {k: v['tags'] for k, v in files.items()}
     
-    def batch_apply(self, folder_path: str, tag: Tuple[str, str], type_filter: str = None) -> int:
+    def batch_apply(self, folder_path: str, tag: Tuple[str, str], type_filter: Optional[str] = None) -> int:
         """Apply tag to files in folder."""
         count = 0
         for root, _, filenames in os.walk(folder_path):
